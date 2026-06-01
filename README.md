@@ -115,12 +115,14 @@ Output files are written as PBM/PGM + PNG in the current directory.
 
 ### Web simulator — video flipbook
 
-`web-sim/index.html` also accepts short video files. Upload an MP4/WebM, then
-press **Capture** to extract real frames at regular intervals and process each
-through the current effect. Toggle **Strip** to see all frames stacked vertically
-(the way the thermal printer outputs them), or keep **Play** running for a 5 fps
-animation preview. If only a static image is loaded, simulated camera shake is
-used instead.
+Open [`web-sim/index.html`](web-sim/index.html) directly in your browser — no
+server needed. Upload a photo or MP4/WebM video, then press **Render** to preview
+any effect at 384px wide.
+Press **Capture** (video flipbook) to extract real frames at regular intervals and
+process each through the current effect. Toggle **Strip** to see all frames stacked
+vertically (the way the thermal printer outputs them), or keep **Play** running for
+a 5 fps animation preview. If only a static image is loaded, simulated camera shake
+is used instead.
 
 ## Wiring (Ai-Thinker ESP32-CAM)
 
