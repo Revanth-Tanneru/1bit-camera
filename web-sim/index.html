@@ -1028,9 +1028,9 @@ function shakeImage(data, w, h, maxPx) {
   const out = new Uint8Array(w * h);
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
-      const sx = x + dx, sy = y + dy;
-      out[y * w + x] = (sx >= 0 && sx < w && sy >= 0 && sy < h)
-        ? data[sy * w + sx] : 128;
+      const sx = Math.max(0, Math.min(w - 1, x + dx));
+      const sy = Math.max(0, Math.min(h - 1, y + dy));
+      out[y * w + x] = data[sy * w + sx];
     }
   return out;
 }
@@ -1148,9 +1148,15 @@ function captureVideo() {
   if (!sourceImageData) { alert('Load an image or video first'); return; }
   const {data: srcData, w: sw, h: sh} = sourceImageData;
   const outH = Math.round(sh * OUTPUT_W / sw), shift = Math.max(1, Math.round(OUTPUT_W * 0.025));
+  /* Crop shift pixels from each edge so shake never exposes white borders */
+  const cropX = shift, cropY = shift, cropW = sw - 2 * cropX, cropH = sh - 2 * cropY;
+  const cropped = new Uint8Array(cropW * cropH);
+  for (let y = 0; y < cropH; y++)
+    for (let x = 0; x < cropW; x++)
+      cropped[y * cropW + x] = srcData[(y + cropY) * sw + (x + cropX)];
   videoFrames = [];
   for (let i = 0; i < numFrames; i++) {
-    let small = greyResize(shakeImage(srcData, sw, sh, shift), sw, sh, OUTPUT_W, outH);
+    let small = greyResize(shakeImage(cropped, cropW, cropH, shift), cropW, cropH, OUTPUT_W, outH);
     if (preproc) preprocAll(small, OUTPUT_W, outH, thresh);
     videoFrames.push(runEffect(small, OUTPUT_W, outH, fxId, thresh, dot, levels, invert));
   }
