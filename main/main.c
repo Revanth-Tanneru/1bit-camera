@@ -528,6 +528,33 @@ static void do_video(void) {
     }
 
     ESP_LOGI(TAG, "video: %d frames", fcount);
+
+    /* ── Save to SD card ──────────────────────────────────── */
+    if (fcount > 0) {
+        show_status("SD save...");
+        if (sd_mount() == 0) {
+            static int vseq = 0;
+            for (int i = 0; i < fcount; i++) {
+                char path[40];
+                snprintf(path, sizeof(path), "/sdcard/VD%05d_%02d.pbm", ++vseq, i + 1);
+                FILE *f = fopen(path, "wb");
+                if (f) {
+                    int wb = (PRINT_W + 7) / 8;
+                    int h = heights[i];
+                    fprintf(f, "P4\n%d %d\n", PRINT_W, h);
+                    for (int y = 0; y < h; y++) {
+                        uint8_t buf[48];
+                        for (int x = 0; x < wb; x++)
+                            buf[x] = ~frames[i][y * wb + x];
+                        fwrite(buf, 1, wb, f);
+                    }
+                    fclose(f);
+                }
+            }
+            sd_unmount();
+        }
+    }
+
     if (fcount > 0 && spp_ok) {
         show_status("Printing...");
         pr_init();
@@ -538,8 +565,6 @@ static void do_video(void) {
             vTaskDelay(pdMS_TO_TICKS(30));
         }
         ESP_LOGI(TAG, "video printed %d frames", fcount);
-    } else if (fcount > 0 && !spp_ok) {
-        ESP_LOGW(TAG, "no BT — frames lost");
     }
 
     for (int i = 0; i < fcount; i++) free(frames[i]);
