@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -449,9 +450,10 @@ static void do_capture(void) {
     /* ── Save to SD card ──────────────────────────────────── */
     show_status("SD save...");
     if (sd_mount() == 0) {
-        char path[32];
+        mkdir("/sdcard/capture", 0755);
+        char path[40];
         static int seq = 0;
-        snprintf(path, sizeof(path), "/sdcard/PC%05d.pbm", ++seq);
+        snprintf(path, sizeof(path), "/sdcard/capture/PC%05d.pbm", ++seq);
         FILE *f = fopen(path, "wb");
         if (f) {
             int wb = (PRINT_W + 7) / 8;
@@ -533,10 +535,11 @@ static void do_video(void) {
     if (fcount > 0) {
         show_status("SD save...");
         if (sd_mount() == 0) {
+            mkdir("/sdcard/video", 0755);
             static int vseq = 0;
             for (int i = 0; i < fcount; i++) {
-                char path[40];
-                snprintf(path, sizeof(path), "/sdcard/VD%05d_%02d.pbm", ++vseq, i + 1);
+                char path[48];
+                snprintf(path, sizeof(path), "/sdcard/video/VD%05d_%02d.pbm", ++vseq, i + 1);
                 FILE *f = fopen(path, "wb");
                 if (f) {
                     int wb = (PRINT_W + 7) / 8;
