@@ -49,8 +49,8 @@ static const char *TAG = "1BITCAM";
 enum {
     FX_DITHER_FS,
     FX_DITHER_ATK,
-    FX_JARVIS,
-    FX_STUCKI,
+    FX_DITHER_JARVIS,
+    FX_DITHER_STUCKI,
     FX_BAYER2,
     FX_BAYER4,
     FX_BAYER8,
@@ -132,7 +132,7 @@ static int p_video_frames = 25;
 #define DIALMODE_LEVELS  2
 static int dial_mode = DIALMODE_THRESH;
 static const char *dial_mode_names[] = {"thresh", "size", "lvl"};
-static int dial_mode_last = -1;
+static int dial_inited = 0;
 static int dial_val_last = -1;
 
 /* PSRAM buffers (allocated once on first capture) */
@@ -189,7 +189,7 @@ static void sd_unmount(void) {
 
 static uint32_t spp_handle = 0;
 static volatile int spp_ok = 0;
-static int bt_active = 0;
+static volatile int bt_active = 0;
 
 static void spp_cb(esp_spp_cb_event_t ev, esp_spp_cb_param_t *p) {
     switch (ev) {
@@ -316,27 +316,6 @@ static void show_status(const char *s) {
 
 /* ── Capture + effect + print ───────────────────────────────── */
 
-/* Evaluate 1-bit bitmap (dark=0, light=255) for print quality.
-   Rewards: high edge count (detail) and 10-50% ink coverage. */
-static int eval_quality(const uint8_t *bitmap, int w, int h) {
-    int n = w * h;
-    int ink = 0, edges = 0;
-    for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++) {
-            int p = y * w + x;
-            if (bitmap[p] < 128) ink++;
-            if (x > 0 && (bitmap[p] < 128) != (bitmap[p - 1] < 128)) edges++;
-            if (y > 0 && (bitmap[p] < 128) != (bitmap[p - w] < 128)) edges++;
-        }
-    float cov = (float)ink / n;
-    float cov_score;
-    if (cov < 0.05f || cov > 0.80f) cov_score = 0.0f;
-    else if (cov < 0.10f) cov_score = (cov - 0.05f) / 0.05f;
-    else if (cov > 0.60f) cov_score = (0.80f - cov) / 0.20f;
-    else cov_score = 1.0f;
-    return (int)(edges * cov_score);
-}
-
 /* Reusable effect dispatch — explicit params, returns output height. */
 static int run_effect(uint8_t *small, int w, int h, uint8_t *bitmap,
                        int dot, int thresh, int levels, int invert) {
@@ -361,9 +340,9 @@ static int run_effect(uint8_t *small, int w, int h, uint8_t *bitmap,
             effect_dither(small, w, h, bitmap, DITHER_FLOYD_STEINBERG, 0); break;
         case FX_DITHER_ATK:
             effect_dither(small, w, h, bitmap, DITHER_ATKINSON, 0); break;
-        case FX_JARVIS:
+        case FX_DITHER_JARVIS:
             effect_dither(small, w, h, bitmap, DITHER_JARVIS, 0); break;
-        case FX_STUCKI:
+        case FX_DITHER_STUCKI:
             effect_dither(small, w, h, bitmap, DITHER_STUCKI, 0); break;
         case FX_BAYER2:
             effect_dither(small, w, h, bitmap, DITHER_BAYER2, 0); break;
@@ -628,7 +607,7 @@ static void console_cmd(const char *s) {
     else if (strcmp(s, "help") == 0) {
         printf("effect N  dot N  thresh N  levels N  invert  preproc  go\n");
         printf("video [2-60] — burst capture & print flipbook\n");
-        printf("GPIO33 mode: GND=thresh  1/2Vcc=size  Vcc=levels\n");
+        printf("GPIO33 mode: GND=thresh  1/3-2/3Vcc=size  Vcc=levels\n");
         printf("effects:\n");
         for (int i = 0; i < FX_COUNT; i++)
             printf("%d=%s\n", i, effect_names[i]);
@@ -679,13 +658,13 @@ static int dial_read_adc2(adc2_channel_t ch) {
 static void dial_apply(void) {
     int raw = dial_read_adc1(DIAL_TH_CH);   /* GPIO 33 — mode selector */
 
-    /* Determine zone with hysteresis */
+    /* Determine zone with hysteresis (12-bit ADC: 0-4095) */
     static int active_zone = DIALMODE_THRESH;
-    if (dial_mode_last < 0) {
+    if (!dial_inited) {
         if (raw < 1366) active_zone = DIALMODE_THRESH;
         else if (raw < 2731) active_zone = DIALMODE_SIZE;
         else active_zone = DIALMODE_LEVELS;
-        dial_mode_last = 0;
+        dial_inited = 1;
     } else {
         int hyst = 120;
         switch (active_zone) {

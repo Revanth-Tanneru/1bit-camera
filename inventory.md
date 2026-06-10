@@ -6,8 +6,7 @@
 - 830 tie-points breadboard
 
 ## Boards
-- ESP32 DevKit (38-pin, CP2102, USB-C) — from starter kit, no camera
-- Ai-Thinker ESP32-CAM with OV2640 + PSRAM — owned
+- Ai-Thinker ESP32-CAM with OV5640 + PSRAM — owned
 - ESP32-CAM-MB USB programmer — owned
 
 ## Cables & Connectors
@@ -26,7 +25,7 @@
 - 1x precision potentiometer
 
 ## Displays
-- None yet (project needs SSD1306 OLED 128×64 I2C — not yet purchased)
+- SSD1306 OLED 128×64 I2C — owned
 
 ## Outputs
 - 1x active buzzer
@@ -70,6 +69,5 @@
 - 10x tactile button switches
 
 ## Still needed for 1-bit camera
-- SSD1306 OLED 128×64 I2C (~£3)
 - 1x 10kΩ potentiometer (optional, ~£0.50)
 - 57mm thermal printer with BT SPP (~£25 — on hold)

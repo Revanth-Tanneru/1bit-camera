@@ -149,26 +149,35 @@ GPIO2  ── MISO
 GND    ── GND
 
 ESP32-CAM          Thermal printer (BT SPP)
-UART TX ── BT module RX  (or use built-in ESP32 BT)
+UART TX ── BT module RX  (or use ESP32 built-in BT)
 ```
 
 ## Project structure
 
 ```
-├── CMakeLists.txt          ESP-IDF project file
-├── sdkconfig.defaults      ESP-IDF defaults (PSRAM, BT, camera)
+├── .github/
+│   └── workflows/
+│       └── jekyll-docker.yml  GitHub Pages workflow
+├── CMakeLists.txt             ESP-IDF project file
+├── sdkconfig.defaults         ESP-IDF defaults (PSRAM, BT, camera)
 ├── main/
-│   ├── CMakeLists.txt      Component build file
-│   ├── main.c              Firmware entry, capture loop, console
-│   ├── effects.c           Image processing (dither, halftone, etc.)
-│   ├── effects.h           Effects API
-│   ├── display.c           SSD1306 OLED driver (I2C)
-│   └── display.h           Display API
+│   ├── CMakeLists.txt         Component build file
+│   ├── main.c                 Firmware entry, capture loop, console
+│   ├── effects.c              Image processing (dither, halftone, etc.)
+│   ├── effects.h              Effects API
+│   ├── display.c              SSD1306 OLED driver (I2C)
+│   └── display.h              Display API
 ├── test/
-│   ├── test_effects.c      Host-side test harness
-│   └── *.jpg               Test source images
+│   ├── test_effects.c         Host-side test harness
+│   └── *.jpg                  Test source images
+├── docs/
+│   ├── index.html             GitHub Pages landing page
+│   └── sim/
+│       └── index.html         Browser-based effect preview (Pages copy)
+├── scripts/
+│   └── sync-sim.sh            Sync web-sim → docs/sim
 └── web-sim/
-    └── index.html          Browser-based effect preview
+    └── index.html             Browser-based effect preview (canonical)
 ```
 
 ## Licence

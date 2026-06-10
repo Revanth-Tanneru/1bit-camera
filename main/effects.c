@@ -279,7 +279,7 @@ void effect_halftone_line(const uint8_t *grey, int w, int h, uint8_t *out,
             out[y * w + x] = grey[y * w + x] > screen ? 255 : 0;
         }
     for (int i = 0; i < w * h; i++) out[i] = 255 - out[i];
-    (void)thresh;
+    (void)thresh; /* reserved for gamma control */
 }
 
 /* ── Halftone crosshatch ────────────────────────────────────── */
@@ -310,7 +310,7 @@ void effect_halftone_crosshatch(const uint8_t *grey, int w, int h, uint8_t *out,
             out[y * w + x] = grey[y * w + x] > screen ? 255 : 0;
         }
     for (int i = 0; i < w * h; i++) out[i] = 255 - out[i];
-    (void)thresh;
+    (void)thresh; /* reserved for gamma control */
 }
 
 /* ── Pixel art ──────────────────────────────────────────────── */
@@ -769,6 +769,4 @@ void effect_comic(const uint8_t *grey, int w, int h, uint8_t *out,
         }
     for (int i = 0; i < w * h; i++) out[i] = 255 - out[i];
 }
-
-
 

@@ -34,3 +34,6 @@ test/fx_7efc0b50/
 
 # Web sim
 web-sim/node_modules/
+
+# Generated copy (synced via scripts/sync-sim.sh)
+docs/sim/index.html

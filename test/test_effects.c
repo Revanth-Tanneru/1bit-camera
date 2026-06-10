@@ -17,12 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <math.h>
 #include <unistd.h>
-
-#define MALLOC_CAP_SPIRAM 0
-#define heap_caps_malloc(s, c) malloc(s)
 
 #include "../main/effects.h"
 
@@ -114,7 +110,7 @@ static uint8_t *read_bmp(const char *path, int *w, int *h) {
     return grey;
 }
 
-/* Auto-convert any image to PGM via sips -> BMP */
+/* Auto-convert any image to PGM via ImageMagick (convert), GraphicsMagick (gm), or sips (macOS) */
 static uint8_t *read_any(const char *path, int *w, int *h) {
     uint8_t *g;
     /* Try PGM directly (first check magic so we don't spam stderr) */
@@ -125,20 +121,35 @@ static uint8_t *read_any(const char *path, int *w, int *h) {
         g = read_pgm(path, w, h);
         if (g) return g;
     }
-    /* Convert via sips (macOS) */
+    /* Convert to BMP using available tool */
     char bmp[1024];
     snprintf(bmp, sizeof(bmp), "/tmp/_fx_%d.bmp", getpid());
-    char cmd[2048];
-    snprintf(cmd, sizeof(cmd),
-        "sips -s format bmp \"%s\" --out \"%s\" >/dev/null 2>&1", path, bmp);
-    if (system(cmd) == 0) {
+    int ok = 0;
+    if (system("which convert >/dev/null 2>&1") == 0) {
+        char cmd[2048];
+        snprintf(cmd, sizeof(cmd),
+            "convert \"%s\" \"%s\" >/dev/null 2>&1", path, bmp);
+        ok = (system(cmd) == 0);
+    } else if (system("which gm >/dev/null 2>&1") == 0) {
+        char cmd[2048];
+        snprintf(cmd, sizeof(cmd),
+            "gm convert \"%s\" \"%s\" >/dev/null 2>&1", path, bmp);
+        ok = (system(cmd) == 0);
+    } else if (system("which sips >/dev/null 2>&1") == 0) {
+        char cmd[2048];
+        snprintf(cmd, sizeof(cmd),
+            "sips -s format bmp \"%s\" --out \"%s\" >/dev/null 2>&1", path, bmp);
+        ok = (system(cmd) == 0);
+    } else {
+        fprintf(stderr, "No image converter found — install ImageMagick or use PGM directly\n");
+    }
+    if (ok) {
         g = read_bmp(bmp, w, h);
         remove(bmp);
         if (g) return g;
     }
-    fprintf(stderr, "Can't read %s — convert to PGM (P5) first with:\n", path);
-    fprintf(stderr, "  sips -s format bmp photo.jpg --out photo.bmp\n");
-    fprintf(stderr, "  (then rename to .pgm and edit header)\n");
+    fprintf(stderr, "Can't read %s.  Convert to PGM (P5) first:\n", path);
+    fprintf(stderr, "  convert photo.jpg photo.pgm\n");
     return NULL;
 }
 
@@ -169,15 +180,25 @@ static int write_pbm(const char *path, const uint8_t *pix, int w, int h) {
     return 0;
 }
 
-/* Convert to PNG on macOS via sips (strips .pgm/.pbm extension) */
+/* Convert to PNG using available tool (strips .pgm/.pbm extension) */
 static int to_png(const char *path) {
     char stem[512];
     snprintf(stem, sizeof(stem), "%s", path);
     char *dot = strrchr(stem, '.');
     if (dot) *dot = 0;
-    char cmd[1024];
-    snprintf(cmd, sizeof(cmd),
-        "sips -s format png \"%s\" --out \"%s.png\" >/dev/null 2>&1", path, stem);
+    char cmd[2048];
+    if (system("which convert >/dev/null 2>&1") == 0) {
+        snprintf(cmd, sizeof(cmd),
+            "convert \"%s\" \"%s.png\" >/dev/null 2>&1", path, stem);
+    } else if (system("which gm >/dev/null 2>&1") == 0) {
+        snprintf(cmd, sizeof(cmd),
+            "gm convert \"%s\" \"%s.png\" >/dev/null 2>&1", path, stem);
+    } else if (system("which sips >/dev/null 2>&1") == 0) {
+        snprintf(cmd, sizeof(cmd),
+            "sips -s format png \"%s\" --out \"%s.png\" >/dev/null 2>&1", path, stem);
+    } else {
+        return -1;
+    }
     return system(cmd);
 }
 
@@ -346,8 +367,13 @@ static int process_one(const char *src_name, const uint8_t *grey_src,
                open_result ? "  (opening...)" : "");
         if (open_result) {
             char cmd[1024];
-            snprintf(cmd, sizeof(cmd), "open \"%s\"", png_path);
-            system(cmd);
+            if (system("which open >/dev/null 2>&1") == 0)
+                snprintf(cmd, sizeof(cmd), "open \"%s\"", png_path);
+            else if (system("which xdg-open >/dev/null 2>&1") == 0)
+                snprintf(cmd, sizeof(cmd), "xdg-open \"%s\"", png_path);
+            else
+                cmd[0] = '\0';
+            if (cmd[0]) system(cmd);
         }
     }
 
@@ -493,8 +519,14 @@ int main(int argc, char **argv) {
                         preproc, thresh, dot, thresh, levels, invert,
                         &fx_table[i], 0);
         }
-        printf("\nDone.  Use `open fx_*.png` to view.\n");
-        if (do_open) system("open .");
+        printf("\nDone.\n");
+        if (do_open) { char cmd[1024];
+            if (system("which open >/dev/null 2>&1") == 0)
+                snprintf(cmd, sizeof(cmd), "open .");
+            else if (system("which xdg-open >/dev/null 2>&1") == 0)
+                snprintf(cmd, sizeof(cmd), "xdg-open .");
+            else cmd[0] = '\0';
+            if (cmd[0]) system(cmd); }
         free(grey);
         return 0;
     }
@@ -512,7 +544,13 @@ int main(int argc, char **argv) {
                         &fx_table[9], 0);
         }
         printf("\nDone.\n");
-        if (do_open) system("open .");
+        if (do_open) { char cmd[1024];
+            if (system("which open >/dev/null 2>&1") == 0)
+                snprintf(cmd, sizeof(cmd), "open .");
+            else if (system("which xdg-open >/dev/null 2>&1") == 0)
+                snprintf(cmd, sizeof(cmd), "xdg-open .");
+            else cmd[0] = '\0';
+            if (cmd[0]) system(cmd); }
         free(grey);
         return 0;
     }

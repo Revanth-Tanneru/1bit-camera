@@ -18,11 +18,6 @@ extern "C" {
 #define DITHER_RANDOM          7
 #define DITHER_THRESHOLD       8
 
-/* Halftone modes */
-#define HALFTONE_CLUSTERED 0
-#define HALFTONE_LINE      1
-#define HALFTONE_CROSSHATCH 2
-
 /*
  * Output: packed 1-bit (8 pixels/byte, MSB=leftmost pixel)
  * out_w_bytes = (width + 7) / 8
@@ -48,7 +43,7 @@ void effect_halftone(const uint8_t *grey, int w, int h, uint8_t *out,
 /* Halftone line screen.
  * period: 4-24 (pixel spacing)
  * angle: 0 (vertical), 90 (horizontal), 45, 135
- * thresh: gamma control
+ * thresh: unused (reserved)
  */
 void effect_halftone_line(const uint8_t *grey, int w, int h, uint8_t *out,
                           int period, int angle, int thresh);
@@ -103,7 +98,7 @@ void preprocess_gamma(uint8_t *grey, int w, int h, int thresh);
 /* Unsharp mask: 3x3 Laplacian edge boost. strength 0.0-2.0 */
 void preprocess_sharpen(uint8_t *grey, int w, int h, float strength);
 
-/* Full pipeline: autocontrast + gamma + sharpen + denoise. One call. */
+/* Full pipeline: autocontrast + gamma + sharpen. One call. */
 void preprocess_all(uint8_t *grey, int w, int h, int gamma_thresh);
 
 /* Utility: resize greyscale image using bilinear interpolation.
