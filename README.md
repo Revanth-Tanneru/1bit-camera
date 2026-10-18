@@ -115,6 +115,9 @@ Output files are written as PBM/PGM + PNG in the current directory.
 
 ### Web simulator — video flipbook
 
+A live version (camera, samples and upload) is on the project page:
+[revanth-tanneru.github.io/work/1bit-camera](https://revanth-tanneru.github.io/work/1bit-camera/).
+
 Open [`web-sim/index.html`](web-sim/index.html) directly in your browser — no
 server needed. Upload a photo or MP4/WebM video, then press **Render** to preview
 any effect at 384px wide.
@@ -171,11 +174,9 @@ UART TX ── BT module RX  (or use ESP32 built-in BT)
 │   ├── test_effects.c         Host-side test harness
 │   └── *.jpg                  Test source images
 ├── docs/
-│   ├── index.html             GitHub Pages landing page
+│   ├── index.html             Redirect to the portfolio page
 │   └── sim/
-│       └── index.html         Browser-based effect preview (Pages copy)
-├── scripts/
-│   └── sync-sim.sh            Sync web-sim → docs/sim
+│       └── index.html         Redirect to the portfolio page
 └── web-sim/
     └── index.html             Browser-based effect preview (canonical)
 ```
